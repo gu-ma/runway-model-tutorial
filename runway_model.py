@@ -1,4 +1,5 @@
 import json
+import torch
 from PIL import Image
 from torchvision import models, transforms
 from torch.autograd import Variable
@@ -29,8 +30,12 @@ def classify(model, inputs):
     img_tensor = preprocess(img)
     img_tensor.unsqueeze_(0)
     img_variable = Variable(img_tensor)
-    fc_out = model(img_variable)
-    label = labels[str(fc_out.data.numpy().argmax())]
+    if torch.cuda.is_available():
+        img_variable = img_variable.to('cuda')
+        model.to('cuda')
+    with torch.no_grad():
+        fc_out = model(img_variable)
+    label = labels[str(fc_out[0].cpu().data.numpy().argmax())]
     return {'label': label}
 
 if __name__ == '__main__':
